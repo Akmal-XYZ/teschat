@@ -7,6 +7,28 @@
   <title>Private Bestie Chat — Akmal & Rina</title>
 
   <style>
+
+.h-right {
+  margin-left: auto;
+}
+
+.back-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: white;
+  font-size: 20px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: 0.15s;
+}
+
+.back-btn:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+
     /* RESET */
     *{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%;}
@@ -164,14 +186,19 @@
 
   <div class="app screen" id="chatScreen" style="display:none;">
     <div class="header">
-      <div class="h-left">
-        <div id="hdrAvatar" class="h-avatar"></div>
-        <div>
-          <div id="hdrTitle" class="h-title">Private Chat</div>
-          <div id="hdrSub" class="h-sub">Hanya Akmal & Rina</div>
-        </div>
-      </div>
+  <div class="h-left">
+    <div id="hdrAvatar" class="h-avatar"></div>
+    <div>
+      <div id="hdrTitle" class="h-title">Private Chat</div>
+      <div id="hdrSub" class="h-sub">Hanya Akmal & Rina</div>
     </div>
+  </div>
+
+  <!-- TOMBOL BACK -->
+  <div class="h-right">
+    <button class="back-btn" onclick="goBackToSelect()">⟵</button>
+  </div>
+</div>
 
     <div id="messages" class="messages" aria-live="polite"></div>
 
@@ -651,6 +678,23 @@
       toast.style.pointerEvents = 'none';
       setTimeout(()=>{ toast.style.opacity = '0'; }, 1200);
     }
+
+function goBackToSelect() {
+  // Hide chat screen
+  chatScreen.style.display = 'none';
+
+  // Show select screen
+  selectScreen.style.display = 'flex';
+
+  // Remove saved user, so masuk ke pemilihan ulang
+  localStorage.removeItem('bestie_user');
+
+  // Clear messages on screen
+  messagesEl.innerHTML = '';
+
+  // Stop listening Firebase
+  dbRef.off();
+}
   </script>
 </body>
 </html>
