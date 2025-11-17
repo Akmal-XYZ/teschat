@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="format-detection" content="telephone=no">
+  <title>Private Bestie Chat — Akmal & Rina</title>
+
+  <style>
+    /* RESET */
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;}
+
+    html, body {
+      touch-action: manipulation;
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+      height: 100dvh;
+    }
+    body{
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(160,90,255,0.06), transparent),
+                  radial-gradient(900px 500px at 90% 90%, rgba(0,140,255,0.06), transparent),
+                  #020205;
+      color:#fff;
+      height:100dvh;
+      width:100vw;
+      min-height:100dvh;
+      min-width:100vw;
+      padding:0 !important;
+      margin:0 !important;
+      display:block;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* APP FRAME */
+    .app {
+      width:100vw !important;
+      height:100dvh !important;
+      max-width:none !important;
+      max-height:none !important;
+      border-radius:0 !important;
+      box-shadow:none !important;
+      border:none !important;
+      margin:0 !important;
+      display:flex;
+      flex-direction:column;
+      position:relative;
+      overflow:hidden;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    }
+
+    /* background glows */
+    .app::before, .app::after{
+      content:"";
+      position:absolute;
+      z-index:0;
+      filter:blur(60px);
+      opacity:0.9;
+      pointer-events:none;
+    }
+    .app::before{ width:380px;height:380px; background:linear-gradient(135deg,#c8a2ff,#6fa8ff); left:-80px; top:-120px; border-radius:50%;}
+    .app::after { width:300px;height:300px; background:linear-gradient(135deg,#0ea5ff,#0047ff); right:-60px; bottom:-100px; border-radius:50%;}
+
+    /* ensure text sits above blur */
+    .app * { position:relative; z-index:1; }
+
+    /* SCREENS */
+    .screen { z-index:1; display:flex; flex-direction:column; height:100%; }
+
+    /* SELECT (LOBBY) */
+    .select { padding:28px; display:flex; flex-direction:column; gap:18px; align-items:center; justify-content:flex-start; text-align:center; }
+    .brand { font-weight:700; font-size:18px; letter-spacing:0.2px; margin-top:6px; }
+    .sub { color:rgba(255,255,255,0.65); font-size:13px; margin-bottom:6px; }
+
+    .choice { width:100%; max-width:360px; padding:14px 16px; border-radius:12px; border:1px solid rgba(255,255,255,0.04); background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); cursor:pointer; transition:transform .12s ease, box-shadow .12s ease; display:flex; align-items:center; gap:14px; justify-content:flex-start; }
+    .choice:hover{ transform:translateY(-6px); box-shadow:0 12px 30px rgba(2,6,23,0.6); }
+
+    .avatar { width:54px; height:54px; border-radius:12px; flex-shrink:0; display:inline-block; background-size:cover; background-position:center; border:1px solid rgba(255,255,255,0.06); }
+    .label { text-align:left; font-weight:800; font-size:16px; color:#fff; }
+    .desc { font-size:13px; color:rgba(255,255,255,0.7); margin-top:4px; font-weight:600; opacity:0.95; }
+
+    /* CHAT HEADER */
+    .header { height:64px; display:flex; align-items:center; padding:10px 14px; gap:12px; border-bottom:1px solid rgba(255,255,255,0.04); background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); }
+    .header .h-left { display:flex; align-items:center; gap:12px; }
+    .header .h-avatar{ width:44px;height:44px;border-radius:10px;background-size:cover;background-position:center;border:1px solid rgba(255,255,255,0.06); }
+    .header .h-title{ font-weight:800; font-size:16px; text-shadow: 0 4px 18px rgba(0,0,0,0.6); }
+    .header .h-sub{ font-size:12px; color:rgba(255,255,255,0.65); margin-top:2px; }
+
+    /* MESSAGES */
+    .messages { flex:1; overflow:auto; padding:18px; display:flex; flex-direction:column; gap:12px; -webkit-overflow-scrolling:touch; }
+
+    /* bubble */
+    .bubble { max-width:78%; padding:12px 14px; border-radius:14px; font-size:15px; line-height:1.4; word-break:break-word; box-shadow: 0 6px 20px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.04); backdrop-filter: blur(6px); cursor:pointer; position:relative; }
+
+    /* left = other; right = me */
+    .left { align-self:flex-start; border-bottom-left-radius:4px; }
+    .right { align-self:flex-end; border-bottom-right-radius:4px; }
+
+    /* rina style */
+    .rina { background: linear-gradient(135deg, rgba(200,162,255,0.95), rgba(111,155,255,0.95)); color:#0b0b0f; border: 1px solid rgba(255,255,255,0.06); }
+
+    /* akmal style */
+    .akmal { background: linear-gradient(180deg, rgba(18,18,18,0.95), rgba(8,8,8,0.95)); color:#ffffff; border:1px solid rgba(255,255,255,0.06); }
+
+    .meta { font-size:11px; color:rgba(255,255,255,0.55); margin-top:6px; text-align:right; }
+
+    .edited-tag { font-size:11px; color:rgba(255,255,255,0.55); margin-top:4px; text-align:right; opacity:0.8; }
+
+    /* deleted style */
+    .deleted { font-style:italic; color:rgba(255,255,255,0.6); background:transparent; box-shadow:none; border: none; opacity:0.95; }
+
+    /* composer */
+    .composer { padding:12px; display:flex; gap:10px; align-items:center; border-top:1px solid rgba(255,255,255,0.03); background:linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.5)); }
+    .composer input { flex:1; padding:12px 14px; border-radius:12px; border:none; outline:none; background:rgba(255,255,255,0.03); color:#fff; font-size:15px; }
+    .btn { padding:10px 14px; border-radius:12px; background:linear-gradient(135deg,#1e90ff,#0066ff); color:white; font-weight:700; border:none; cursor:pointer; box-shadow: 0 8px 20px rgba(0,110,255,0.18); min-width:72px; }
+
+    /* bottom sheet */
+    .bottom-sheet-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.35); display:none; z-index:50; }
+    .bottom-sheet { position:fixed; left:0; right:0; bottom:0; z-index:60; background:linear-gradient(180deg,#0b0b0f,#0b0b14); border-top-left-radius:16px; border-top-right-radius:16px; padding:12px; box-shadow:0 -10px 30px rgba(0,0,0,0.6); transform:translateY(120%); transition:transform .25s cubic-bezier(.2,.9,.2,1); max-width:460px; margin:0 auto; }
+    .bottom-sheet.show { transform:translateY(0); }
+    .bs-row { display:flex; gap:8px; padding:6px 8px; align-items:center; border-radius:10px; cursor:pointer; }
+    .bs-row:hover { background:rgba(255,255,255,0.02); }
+    .bs-title { font-weight:700; font-size:16px; }
+    .bs-sub { font-size:13px; color:rgba(255,255,255,0.65); }
+
+    @media (max-width:420px){
+      .header .h-title { font-size:15px; }
+      .header .h-avatar{ width:40px;height:40px }
+      .avatar{ width:48px;height:48px }
+      .composer { padding:10px }
+      .bubble { font-size:14px; max-width:82%; padding:10px 12px } }
+
+    /* fix for lobby text contrast */
+    .select .brand, .select .sub, .choice .label, .choice .desc { text-shadow: 0 6px 22px rgba(2,6,23,0.6); }
+
+  </style>
+</head>
+<body>
+
+  <div class="app screen" id="selectScreen">
+    <div class="select">
+      <div class="brand">Private Bestie — Pilih Identitas</div>
+      <div class="sub">Pilih Akmal atau Rina. Chat akan tampil sebagai DM 1-on-1.</div>
+
+      <div class="choice" onclick="selectUser('Akmal')">
+        <div class="avatar" id="avatarAkmal" style="background-image:url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiJsiL3BkB4U_c8283ct7YZ4o0BmxaiMpeAlZvfpzyYFgUlFqG-5O3X0kMTJmNYyAvBz5Usx1pk4kj2iAkVjS5DbeRFQ7Qiy5R6LklJO08NLzxYoG8_B_FuVZOaF73Ztaa0xlgvDcOMSP6u7LL7Dms17iYcb4zTdDFmnJh1jYOojkJv4SaCI5WEcyYV/s640/182022195038.jpg');"></div>
+        <div style="flex:1; text-align:left;">
+          <div class="label">Akmal</div>
+          <div class="desc">Tema hitam — chat muncul di kanan</div>
+        </div>
+      </div>
+
+      <div class="choice" onclick="selectUser('Rina')">
+        <div class="avatar" id="avatarRina" style="background-image:url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjweel5jAb9Ku0TEMPzgS5ClSLZEjOiA43hFCPc5zV1qIG5Vx36TT4tDqMaRSwACbqR1_pX6FTaqLFA3KWHYTxKd0X1C8NzPYHE-Upya1H3zUanqC9tUJt_R0bsmQesOR_uJt2_j3Vou4ORdCel8gWAQfJDyk4dm7hEYWV6ZHaaXoY4nSmQfwnaesYA/s640/182022195020.jpg');"></div>
+        <div style="flex:1; text-align:left;">
+          <div class="label">Rina</div>
+          <div class="desc">Tema lilac + biru — chat muncul di kanan</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app screen" id="chatScreen" style="display:none;">
+    <div class="header">
+      <div class="h-left">
+        <div id="hdrAvatar" class="h-avatar"></div>
+        <div>
+          <div id="hdrTitle" class="h-title">Private Chat</div>
+          <div id="hdrSub" class="h-sub">Hanya Akmal & Rina</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="messages" class="messages" aria-live="polite"></div>
+
+    <div class="composer">
+      <input id="msgInput" type="text" placeholder="Ketik pesan..." autocomplete="off" />
+      <button id="sendBtn" class="btn" onclick="sendMessage()">Kirim</button>
+    </div>
+  </div>
+
+  <!-- bottom sheet -->
+  <div id="bsBackdrop" class="bottom-sheet-backdrop" onclick="closeBottomSheet()"></div>
+  <div id="bottomSheet" class="bottom-sheet" role="dialog" aria-modal="true" aria-hidden="true">
+    <div id="bsInfo" style="padding:6px 8px 8px 8px; border-radius:8px;">
+      <div id="bsTitle" class="bs-title">Aksi pesan</div>
+      <div id="bsSubtitle" class="bs-sub" style="margin-top:6px;">Pilih tindakan untuk pesan ini</div>
+    </div>
+    <div style="height:8px"></div>
+    <div id="bsCopy" class="bs-row" onclick="copySelectedMessage()">
+      <div class="bs-title">Salin pesan</div>
+    </div>
+    <div id="bsEdit" class="bs-row" onclick="startEditSelectedMessage()">
+      <div class="bs-title">Edit pesan</div>
+    </div>
+    <div id="bsDelete" class="bs-row" onclick="deleteSelectedMessage()">
+      <div class="bs-title">Hapus pesan</div>
+    </div>
+    <div class="bs-row" onclick="closeBottomSheet()" style="margin-top:8px;">
+      <div class="bs-title">Batal</div>
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+  <script>
+    // ====== GANTI DENGAN CONFIG FIREBASE LO ======
+    const firebaseConfig = {
+      apiKey: "APIKEY_LO",
+      authDomain: "AUTHDOMAIN_LO",
+      databaseURL: "https://sevsta-119e7-default-rtdb.firebaseio.com",
+      projectId: "PROJECTID_LO",
+      storageBucket: "BUCKET_LO",
+      messagingSenderId: "MSGID_LO",
+      appId: "APPID_LO"
+    };
+    // =============================================
+
+    firebase.initializeApp(firebaseConfig);
+    const dbRef = firebase.database().ref("private_bestie_chat_v1");
+
+    let currentUser = '';
+    let selectScreen, chatScreen, messagesEl, hdrTitle, hdrSub, hdrAvatar;
+    let bottomSheet, bsBackdrop, bsEdit, bsDelete, bsTitle, bsSubtitle, bsCopy;
+
+    // keep track of rendered message keys to avoid duplicates
+    const renderedKeys = new Set();
+    // map message key -> last rendered DOM element (to support updates)
+    const renderedEls = new Map();
+
+    // editing state
+    let editingKey = null; // firebase child key being edited (null when not editing)
+    let selectedMessageMeta = null; // { key, sender, text }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // DOM elements
+      selectScreen = document.getElementById('selectScreen');
+      chatScreen = document.getElementById('chatScreen');
+      messagesEl = document.getElementById('messages');
+      hdrTitle = document.getElementById('hdrTitle');
+      hdrSub = document.getElementById('hdrSub');
+      hdrAvatar = document.getElementById('hdrAvatar');
+      bottomSheet = document.getElementById('bottomSheet');
+      bsBackdrop = document.getElementById('bsBackdrop');
+      bsEdit = document.getElementById('bsEdit');
+      bsDelete = document.getElementById('bsDelete');
+      bsCopy = document.getElementById('bsCopy');
+      bsTitle = document.getElementById('bsTitle');
+      bsSubtitle = document.getElementById('bsSubtitle');
+
+      currentUser = localStorage.getItem('bestie_user') || '';
+      if (currentUser) showChatFor(currentUser);
+
+      // send on enter
+      document.getElementById('msgInput').addEventListener('keydown', (e)=>{
+        if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
+      });
+
+      // keep scroll when keyboard opens
+      window.addEventListener('resize', ()=>{ setTimeout(()=> messagesEl.scrollTop = messagesEl.scrollHeight, 150); });
+
+      // Global click to close bottom sheet when tapping outside
+      document.addEventListener('click', (e)=>{
+        const inside = bottomSheet.contains(e.target) || e.target.classList.contains('bubble');
+        if (!inside) closeBottomSheet();
+      });
+
+      // Accessibility: prevent accidental text selection on long-press
+      messagesEl.addEventListener('selectstart', e => e.preventDefault());
+    });
+
+    function selectUser(name) {
+      currentUser = name;
+      localStorage.setItem('bestie_user', name);
+      showChatFor(name);
+    }
+
+    function showChatFor(name) {
+      selectScreen.style.display = 'none';
+      chatScreen.style.display = 'flex';
+
+      // Tentukan lawan bicara
+      let otherName, otherPhoto, otherSub;
+      if (name === 'Akmal') {
+        otherName = 'Rina';
+        otherPhoto = "url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjweel5jAb9Ku0TEMPzgS5ClSLZEjOiA43hFCPc5zV1qIG5Vx36TT4tDqMaRSwACbqR1_pX6FTaqLFA3KWHYTxKd0X1C8NzPYHE-Upya1H3zUanqC9tUJt_R0bsmQesOR_uJt2_j3Vou4ORdCel8gWAQfJDyk4dm7hEYWV6ZHaaXoY4nSmQfwnaesYA/s640/182022195020.jpg')";
+        otherSub = 'Tema: Lilac & Biru';
+      } else {
+        otherName = 'Akmal';
+        otherPhoto = "url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiJsiL3BkB4U_c8283ct7YZ4o0BmxaiMpeAlZvfpzyYFgUlFqG-5O3X0kMTJmNYyAvBz5Usx1pk4kj2iAkVjS5DbeRFQ7Qiy5R6LklJO08NLzxYoG8_B_FuVZOaF73Ztaa0xlgvDcOMSP6u7LL7Dms17iYcb4zTdDFmnJh1jYOojkJv4SaCI5WEcyYV/s640/182022195038.jpg')";
+        otherSub = 'Tema: Hitam';
+      }
+      hdrTitle.innerText = 'Chat dengan ' + otherName;
+      hdrSub.innerText = otherSub;
+      hdrAvatar.style.backgroundImage = otherPhoto;
+      hdrAvatar.style.backgroundSize = 'cover';
+      hdrAvatar.style.backgroundPosition = 'center';
+
+      // clear messages and rendered keys
+      renderedKeys.clear();
+      renderedEls.clear();
+      messagesEl.innerHTML = '';
+
+      // reset editing state
+      editingKey = null;
+      selectedMessageMeta = null;
+      resetComposerMode();
+
+      // langsung attach realtime listener, biar chat langsung muncul
+      attachRealtime();
+      // scroll ke bawah setelah sedikit delay (biar smooth)
+      setTimeout(()=> messagesEl.scrollTop = messagesEl.scrollHeight, 100);
+    }
+
+    function attachRealtime(){
+      // Clean listener (avoid duplicate attaching if called multiple times)
+      dbRef.off();
+      // on child_added
+      dbRef.on('child_added', snap => {
+        const d = snap.val();
+        d._key = snap.key;
+        if (renderedKeys.has(d._key)) return;
+        renderMessage(d);
+        renderedKeys.add(d._key);
+      });
+      // on child_changed -> update existing message DOM
+      dbRef.on('child_changed', snap => {
+        const d = snap.val();
+        d._key = snap.key;
+        updateRenderedMessage(d);
+      });
+      // on child_removed (not used but safe)
+      dbRef.on('child_removed', snap => {
+        const key = snap.key;
+        if (renderedEls.has(key)) {
+          const el = renderedEls.get(key);
+          el.remove();
+          renderedEls.delete(key);
+          renderedKeys.delete(key);
+        }
+      });
+    }
+
+    function sendMessage(){
+      const input = document.getElementById('msgInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      if (editingKey) {
+        // currently editing: save change to firebase
+        const newText = text;
+        const updates = {
+          text: newText,
+          edited: true,
+          editedAt: Date.now()
+        };
+        dbRef.child(editingKey).update(updates).then(()=>{
+          // reset composer
+          editingKey = null;
+          selectedMessageMeta = null;
+          resetComposerMode();
+          input.value = '';
+        }).catch(e=>{
+          console.error('Failed to update message', e);
+        });
+      } else {
+        // normal send
+        const payload = { sender: currentUser, text: text, t: Date.now(), edited: false, deleted: false };
+        dbRef.push(payload).then(()=>{ input.value = ''; }).catch(e=>{ console.error(e); });
+      }
+    }
+
+    function resetComposerMode(){
+      const input = document.getElementById('msgInput');
+      const btn = document.getElementById('sendBtn');
+      input.placeholder = 'Ketik pesan...';
+      btn.innerText = 'Kirim';
+    }
+
+    function setComposerEditMode(oldText, key){
+      const input = document.getElementById('msgInput');
+      const btn = document.getElementById('sendBtn');
+      editingKey = key;
+      input.value = oldText;
+      input.focus();
+      // move caret to end
+      input.setSelectionRange(input.value.length, input.value.length);
+      btn.innerText = '✔ Simpan';
+    }
+
+    function renderMessage(data){
+      // data: { sender, text, t, edited, deleted, ... }, _key
+      const key = data._key;
+      // create DOM
+      const div = document.createElement('div');
+      const isMe = (data.sender === currentUser);
+      const sideClass = isMe ? 'right' : 'left';
+      const styleClass = (data.sender === 'Akmal') ? 'akmal' : 'rina';
+      div.className = `bubble ${sideClass} ${styleClass}`;
+      div.dataset.key = key;
+      div.dataset.sender = data.sender;
+
+      // if deleted => show special deleted text
+      if (data.deleted) {
+        div.classList.add('deleted');
+        div.textContent = 'Pesan ini dihapus.';
+        // meta small
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        const dt = data.deletedAt ? new Date(data.deletedAt) : new Date(data.t || Date.now());
+        const hh = dt.getHours().toString().padStart(2,'0');
+        const mm = dt.getMinutes().toString().padStart(2,'0');
+        meta.innerText = hh + ':' + mm;
+        div.appendChild(meta);
+      } else {
+        // message text
+        const textNode = document.createElement('div');
+        textNode.textContent = data.text;
+        div.appendChild(textNode);
+
+        // edited tag
+        if (data.edited) {
+          const ed = document.createElement('div');
+          ed.className = 'edited-tag';
+          ed.innerText = '(diedit)';
+          div.appendChild(ed);
+        }
+
+        // time
+        const time = document.createElement('div');
+        time.className = 'meta';
+        const dt = new Date(data.t || Date.now());
+        const hh = dt.getHours().toString().padStart(2,'0');
+        const mm = dt.getMinutes().toString().padStart(2,'0');
+        time.innerText = hh + ':' + mm;
+        div.appendChild(time);
+      }
+
+      // attach click handler for bottom sheet (tap message)
+      div.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openBottomSheetForMessage({ key, sender: data.sender, text: data.text, deleted: !!data.deleted });
+      });
+
+      messagesEl.appendChild(div);
+      renderedEls.set(key, div);
+
+      // auto scroll if near bottom
+      const nearBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 200;
+      if (nearBottom) messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function updateRenderedMessage(data){
+      const key = data._key;
+      // if not yet rendered, render fresh
+      if (!renderedEls.has(key)) {
+        renderMessage(data);
+        renderedKeys.add(key);
+        return;
+      }
+      const oldEl = renderedEls.get(key);
+      const parent = oldEl.parentElement;
+      const nextSibling = oldEl.nextSibling;
+      // remove old
+      oldEl.remove();
+      renderedEls.delete(key);
+      // render new and insert in same place (respect order isn't strictly necessary for realtime)
+      const newEl = createMessageElement(data);
+      if (nextSibling) parent.insertBefore(newEl, nextSibling);
+      else parent.appendChild(newEl);
+      renderedEls.set(key, newEl);
+
+      // helper to create element (used here)
+      function createMessageElement(d){
+        const div = document.createElement('div');
+        const isMe = (d.sender === currentUser);
+        const sideClass = isMe ? 'right' : 'left';
+        const styleClass = (d.sender === 'Akmal') ? 'akmal' : 'rina';
+        div.className = `bubble ${sideClass} ${styleClass}`;
+        div.dataset.key = d._key;
+        div.dataset.sender = d.sender;
+
+        if (d.deleted) {
+          div.classList.add('deleted');
+          div.textContent = 'Pesan ini dihapus.';
+          const meta = document.createElement('div');
+          meta.className = 'meta';
+          const dt = d.deletedAt ? new Date(d.deletedAt) : new Date(d.t || Date.now());
+          const hh = dt.getHours().toString().padStart(2,'0');
+          const mm = dt.getMinutes().toString().padStart(2,'0');
+          meta.innerText = hh + ':' + mm;
+          div.appendChild(meta);
+        } else {
+          const textNode = document.createElement('div');
+          textNode.textContent = d.text;
+          div.appendChild(textNode);
+
+          if (d.edited) {
+            const ed = document.createElement('div');
+            ed.className = 'edited-tag';
+            ed.innerText = '(diedit)';
+            div.appendChild(ed);
+          }
+
+          const time = document.createElement('div');
+          time.className = 'meta';
+          const dt = new Date(d.t || Date.now());
+          const hh = dt.getHours().toString().padStart(2,'0');
+          const mm = dt.getMinutes().toString().padStart(2,'0');
+          time.innerText = hh + ':' + mm;
+          div.appendChild(time);
+        }
+
+        div.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openBottomSheetForMessage({ key: d._key, sender: d.sender, text: d.text, deleted: !!d.deleted });
+        });
+
+        return div;
+      }
+    }
+
+    // OPEN bottom sheet for a message: show/hide edit/delete/copy
+    function openBottomSheetForMessage(meta){
+      // meta: { key, sender, text, deleted }
+      selectedMessageMeta = meta;
+      bsTitle.innerText = 'Aksi pesan';
+      bsSubtitle.innerText = meta.deleted ? 'Pesan sudah dihapus' : `Pengirim: ${meta.sender}`;
+
+      // Salin pesan: tampilkan jika pesan belum dihapus
+      if (meta.deleted) {
+        bsCopy.style.display = 'none';
+        bsEdit.style.display = 'none';
+        bsDelete.style.display = 'none';
+      } else {
+        bsCopy.style.display = 'flex';
+        // Edit dan hapus hanya untuk pengirim
+        if (meta.sender === currentUser) {
+          bsEdit.style.display = 'flex';
+          bsDelete.style.display = 'flex';
+        } else {
+          bsEdit.style.display = 'none';
+          bsDelete.style.display = 'none';
+        }
+      }
+
+      bsBackdrop.style.display = 'block';
+      bottomSheet.classList.add('show');
+      bottomSheet.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeBottomSheet(){
+      selectedMessageMeta = selectedMessageMeta; // keep selected for editing if needed
+      bsBackdrop.style.display = 'none';
+      bottomSheet.classList.remove('show');
+      bottomSheet.setAttribute('aria-hidden', 'true');
+    }
+
+    // Delete: update to firebase => text becomes 'Pesan ini dihapus.' and deleted:true and deletedAt
+    function deleteSelectedMessage(){
+      if (!selectedMessageMeta) return closeBottomSheet();
+      const key = selectedMessageMeta.key;
+      // confirm before delete (simple confirm)
+      const confirmed = confirm('Hapus pesan ini? Tindakan ini akan menampilkan "Pesan ini dihapus." untuk kedua user.');
+      if (!confirmed) return;
+      const updates = {
+        text: 'Pesan ini dihapus.',
+        deleted: true,
+        deletedBy: currentUser,
+        deletedAt: Date.now(),
+        edited: false
+      };
+      dbRef.child(key).update(updates).then(()=>{
+        closeBottomSheet();
+      }).catch(e=>{
+        console.error('Failed to delete message', e);
+      });
+    }
+
+    // Start edit: populate composer with old text, change button to save
+    function startEditSelectedMessage(){
+      if (!selectedMessageMeta) return closeBottomSheet();
+      const key = selectedMessageMeta.key;
+      const sender = selectedMessageMeta.sender;
+      const text = selectedMessageMeta.text || '';
+      // only allow editing if currentUser is sender and not deleted
+      if (sender !== currentUser) {
+        alert('Hanya pengirim pesan yang dapat mengedit pesan ini.');
+        return closeBottomSheet();
+      }
+      closeBottomSheet();
+      // set composer to edit mode
+      setComposerEditMode(text, key);
+    }
+
+    // Fitur salin pesan ke clipboard
+    function copySelectedMessage() {
+      if (!selectedMessageMeta || !selectedMessageMeta.text) return closeBottomSheet();
+      // Salin ke clipboard
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(selectedMessageMeta.text).then(()=>{
+          closeBottomSheet();
+          showToast('Pesan disalin!');
+        }).catch(()=>{
+          closeBottomSheet();
+          alert('Gagal menyalin pesan');
+        });
+      } else {
+        // fallback lama
+        const ta = document.createElement('textarea');
+        ta.value = selectedMessageMeta.text;
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast('Pesan disalin!');
+        } catch {
+          alert('Gagal menyalin pesan');
+        }
+        document.body.removeChild(ta);
+        closeBottomSheet();
+      }
+    }
+
+    // Toast sederhana
+    function showToast(msg) {
+      let toast = document.getElementById('simpleToast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'simpleToast';
+        toast.style.position = 'fixed';
+        toast.style.left = '50%';
+        toast.style.bottom = '48px';
+        toast.style.transform = 'translateX(-50%)';
+        toast.style.background = 'rgba(30,30,40,0.95)';
+        toast.style.color = '#fff';
+        toast.style.padding = '10px 22px';
+        toast.style.borderRadius = '16px';
+        toast.style.fontWeight = 'bold';
+        toast.style.fontSize = '15px';
+        toast.style.zIndex = '9999';
+        toast.style.boxShadow = '0 4px 24px rgba(0,0,0,0.18)';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.style.opacity = '1';
+      toast.style.pointerEvents = 'none';
+      setTimeout(()=>{ toast.style.opacity = '0'; }, 1200);
+    }
+  </script>
+</body>
+</html>
