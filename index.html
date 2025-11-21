@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+<style>
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 600,
+  'GRAD' 0,
+  'opsz' 24;
+}
+</style>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="format-detection" content="telephone=no">
@@ -698,3 +708,361 @@ function goBackToSelect() {
   </script>
 </body>
 </html>
+
+<script>
+/* =======================================
+   FITUR PEMISAH TANGGAL — HUMAN READABLE
+   Format: Kamis, 15 November 2025
+   Anti double tanggal + z-index ready
+   ======================================= */
+
+let lastRenderedDate = null;
+
+// List nama hari & nama bulan
+const hari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+const bulan = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+];
+
+// Format: Kamis, 15 November 2025
+function formatDateHuman(d) {
+  const h = hari[d.getDay()];
+  const t = d.getDate();
+  const b = bulan[d.getMonth()];
+  const y = d.getFullYear();
+  return `${h}, ${t} ${b} ${y}`;
+}
+
+// Wrap renderMessage agar otomatis nyisipin tanggal
+const _oldRenderMessage = renderMessage;
+renderMessage = function(data) {
+  const msgDate = new Date(data.t);
+  const msgDateStr = formatDateHuman(msgDate);
+
+  // Jika tanggal beda dari sebelumnya → buat separator
+  if (msgDateStr !== lastRenderedDate) {
+    lastRenderedDate = msgDateStr;
+
+    const sep = document.createElement("div");
+    sep.className = "date-separator";
+    sep.innerText = msgDateStr;
+    sep.dataset.date = msgDateStr;
+
+    messagesEl.appendChild(sep);
+  }
+
+  // Render pesan normal
+  _oldRenderMessage(data);
+};
+
+// Reset tanggal saat load ulang chat atau ganti user
+const _oldShowChatFor = showChatFor;
+showChatFor = function(name) {
+  lastRenderedDate = null;
+  _oldShowChatFor(name);
+};
+</script>
+
+
+
+<style>
+.date-separator {
+  width: 100%;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.75);
+
+  padding: 6px 12px;
+  margin: 18px 0;
+
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+
+  box-shadow: 0 2px 15px rgba(0,0,0,0.25);
+
+  z-index: 99999;        /* biar ga ketimpa bottomSheet, bubble, avatar, dll */
+  position: relative;    /* penting untuk z-index */
+}</style>
+
+
+
+
+
+
+<!-- ===== REPLY FIX + DELETED FIX ===== -->
+<style>
+/* Reply preview */
+#replyPreview {
+  background: rgba(255,255,255,0.06);
+  padding: 8px 12px;
+  margin: 6px 12px 0 12px;
+  border-left: 3px solid #4fa3ff;
+  border-radius: 10px;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+#replyPreview .rp-sender { font-weight: 700; }
+#replyPreview .rp-text { opacity: 0.85; }
+#replyPreview .rp-cancel {
+  color: #ff6b6b; font-size: 12px;
+  cursor: pointer; margin-top: 4px;
+}
+
+/* Quote bubble */
+.bubble .reply-quote {
+  background: rgba(255,255,255,0.08);
+  border-left: 3px solid #4fa3ff;
+  padding: 6px 8px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+.reply-quote .rq-sender { font-weight:700; opacity:0.9; }
+.reply-quote .rq-text {
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+</style>
+
+<script>
+(function(){
+  let replyToData = null;
+
+  // Pastikan tombol Reply ada
+  function ensureReplyBtn(){
+    if(document.getElementById("bsReply")) return;
+    const row = document.createElement("div");
+    row.id="bsReply";
+    row.className="bs-row";
+    row.style.display="none";
+    row.innerHTML=`<div class="bs-title">Balas pesan</div>`;
+    row.onclick=startReply;
+    document.getElementById("bsCopy").before(row);
+  }
+  ensureReplyBtn();
+
+  // Hook bottom sheet
+  const _openBS = openBottomSheetForMessage;
+  openBottomSheetForMessage = function(meta){
+    _openBS(meta);
+    const btn=document.getElementById("bsReply");
+    btn.style.display = (meta.deleted ? "none" : "flex");
+  };
+
+  // Reply start
+  function startReply(){
+    replyToData={ 
+      key: selectedMessageMeta.key, 
+      sender:selectedMessageMeta.sender,
+      text:selectedMessageMeta.text
+    };
+    closeBottomSheet();
+    showReplyPreview();
+  }
+
+  function showReplyPreview(){
+    removePreview();
+    const box=document.createElement("div");
+    box.id="replyPreview";
+    box.innerHTML = `
+      <div class='rp-sender'>Membalas: ${replyToData.sender}</div>
+      <div class='rp-text'>${replyToData.text}</div>
+      <div class='rp-cancel' onclick='cancelReply()'>Batal balas</div>
+    `;
+    const composer=document.querySelector(".composer");
+    composer.before(box);
+  }
+
+  function removePreview(){
+    const r=document.getElementById("replyPreview");
+    if(r) r.remove();
+  }
+
+  window.cancelReply=function(){
+    replyToData=null;
+    removePreview();
+  };
+
+  // Override sendMessage
+  const _send=sendMessage;
+  sendMessage=function(){
+    const input=document.getElementById("msgInput");
+    const txt=input.value.trim();
+    if(!txt) return;
+
+    if(editingKey) return _send();
+
+    if(replyToData){
+      dbRef.push({
+        sender:currentUser,
+        text:txt,
+        t:Date.now(),
+        edited:false,
+        deleted:false,
+        replyTo:replyToData
+      });
+      input.value="";
+      replyToData=null;
+      removePreview();
+      return;
+    }
+    _send();
+  };
+
+  // =========== FIX RENDER REPLY (DELETED COMPATIBLE) ===========
+  const _render = renderMessage;
+  renderMessage = function(data){
+    if(!data.replyTo || data.deleted){
+      // Jika pesan ini dihapus → gunakan default render tanpa reply
+      return _render(data);
+    }
+
+    // Buat bubble reply
+    const key=data._key;
+    const isMe=(data.sender===currentUser);
+    const side=isMe?"right":"left";
+    const style=(data.sender==="Akmal")?"akmal":"rina";
+
+    const div=document.createElement("div");
+    div.className=`bubble ${side} ${style}`;
+    div.dataset.key=key;
+
+    // Quote block
+    const quote=document.createElement("div");
+    quote.className="reply-quote";
+    quote.innerHTML=`
+      <div class='rq-sender'>${data.replyTo.sender}</div>
+      <div class='rq-text'>${data.replyTo.text}</div>
+    `;
+
+    const text=document.createElement("div");
+    text.textContent=data.text;
+
+    const time=document.createElement("div");
+    time.className="meta";
+    const dt=new Date(data.t);
+    time.textContent = dt.getHours().toString().padStart(2,'0') + ":" + dt.getMinutes().toString().padStart(2,'0');
+
+    div.appendChild(quote);
+    div.appendChild(text);
+    if(data.edited){
+      const ed=document.createElement("div");
+      ed.className="edited-tag";
+      ed.innerText="(diedit)";
+      div.appendChild(ed);
+    }
+    div.appendChild(time);
+
+    div.onclick=(e)=>{
+      e.stopPropagation();
+      openBottomSheetForMessage({ key:data._key, sender:data.sender, text:data.text, deleted:data.deleted });
+    };
+
+    messagesEl.appendChild(div);
+    renderedEls.set(key,div);
+    messagesEl.scrollTop=messagesEl.scrollHeight;
+  };
+
+})();
+</script>
+
+<!-- ===== FIXED: REPLY VIEW BUTTON + AUTO CHECK DELETED + PULSE EFFECT ===== -->
+<style>
+.reply-view-btn {
+  position: absolute;
+  top: 8px;
+  padding: 4px;
+  background: rgba(0,0,0,0.28);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.15s ease;
+}
+.reply-view-btn:hover {
+  background: rgba(0,0,0,0.38);
+}
+
+/* pulse highlight */
+@keyframes replyPulse {
+  0% { box-shadow: 0 0 0px rgba(79,163,255,0.9); }
+  50% { box-shadow: 0 0 18px rgba(79,163,255,0.7); }
+  100% { box-shadow: 0 0 0px rgba(79,163,255,0); }
+}
+.reply-highlight-pulse {
+  animation: replyPulse 1.5s ease-out;
+  border-radius: 12px;
+}
+</style>
+
+<script>
+(function(){
+
+  function jumpToMessage(key){
+    const target = document.querySelector(`[data-key='${key}']`);
+    if(!target) return;
+
+    target.scrollIntoView({ behavior:"smooth", block:"center" });
+
+    target.classList.add("reply-highlight-pulse");
+    setTimeout(()=> target.classList.remove("reply-highlight-pulse"), 1600);
+  }
+
+  // CHECK apakah pesan asli ada atau sudah dihapus
+  function isDeletedMessage(key){
+    const el = document.querySelector(`[data-key='${key}']`);
+    if(!el) return true; // tidak ditemukan = dianggap deleted
+
+    const text = el.innerText.toLowerCase();
+    return text.includes("pesan ini dihapus");
+  }
+
+  const _render = renderMessage;
+  renderMessage = function(data){
+    _render(data);
+
+    if(!data.replyTo || !data.replyTo.key) return;
+
+    const bubble = renderedEls.get(data._key);
+    if(!bubble) return;
+
+    // jika pesan asli sudah dihapus → NO BUTTON
+    if(isDeletedMessage(data.replyTo.key)) return;
+
+    // buat tombol
+    const btn = document.createElement("div");
+    btn.className = "reply-view-btn";
+    btn.innerHTML = `<span class="material-symbols-outlined">visibility</span>`;
+
+    bubble.dataset.replyKey = data.replyTo.key;
+
+    if(data.sender === "Akmal"){
+      btn.style.left = "-36px";
+    } else {
+      btn.style.right = "-36px";
+    }
+
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      jumpToMessage(data.replyTo.key);
+    };
+
+    bubble.style.position = "relative";
+    bubble.appendChild(btn);
+  };
+
+})();
+</script>
+
+
+
