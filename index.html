@@ -196,6 +196,10 @@
 
   <div class="app screen" id="chatScreen" style="display:none;">
     <div class="header">
+ <!-- TOMBOL BACK -->
+  <div class="h-left">
+    <button class="back-btn" onclick="goBackToSelect()">⟵</button>
+  </div>
   <div class="h-left">
     <div id="hdrAvatar" class="h-avatar"></div>
     <div>
@@ -204,10 +208,7 @@
     </div>
   </div>
 
-  <!-- TOMBOL BACK -->
-  <div class="h-right">
-    <button class="back-btn" onclick="goBackToSelect()">⟵</button>
-  </div>
+ 
 </div>
 
     <div id="messages" class="messages" aria-live="polite"></div>
@@ -1064,5 +1065,476 @@ showChatFor = function(name) {
 })();
 </script>
 
+<!-- ====== NAVBAR GIFT MENU SYSTEM — ONE CLICK FULL ANIMATION ====== -->
+<style>
+#navGiftBtn {
+  margin-left: auto;
+  width: 70px;
+  height: 70px;
+  cursor: pointer;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--giftSpeed, 1s) ease-in-out;
+}
+#navGiftBtn:hover { scale: 1.04; }
 
+#giftMenu {
+  position: absolute;
+  top: 60px;
+  right: 12px;
+  width: 210px;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  padding: 8px 0;
+  display: none;
+  z-index: 99999;
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.55);
+}
+.gm-row {
+  padding: 11px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: rgba(255,255,255,0.86);
+}
+.gm-row:hover { background: rgba(255,255,255,0.06); }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const header = document.querySelector(".header");
+  if (!header || document.getElementById("navGiftBtn")) return;
+
+  /* BEBEK MOTOR BUTTON */
+  const btn = document.createElement("div");
+  btn.id = "navGiftBtn";
+  btn.innerHTML = `
+    <img src="https://media.tenor.com/bFZN6CczLi8AAAAj/peach-goma.gif"
+         style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
+  `;
+  header.appendChild(btn);
+
+  /* DROPDOWN MENU */
+  const menu = document.createElement("div");
+  menu.id = "giftMenu";
+  menu.innerHTML = `
+  <div class="gm-row" id="gm1">Timer</div>
+  <div class="gm-row" id="gm2">Kalkulator</div>
+  <div class="gm-row" id="gm3">Menu 3</div>
+  <div class="gm-row" id="gm4">Menu 4</div>
+  <div class="gm-row" id="gm5">Menu 5</div>
+  <div class="gm-row" id="gm6">Menu 6</div>
+  <div class="gm-row" id="gm7">Menu 7</div>
+  <div class="gm-row" id="gm8">Menu 8</div>
+  <div class="gm-row" id="gm9">Menu 9</div>
+  <div class="gm-row" id="gm10">Menu 10</div>
+`;
+  document.body.appendChild(menu);
+
+  // =============================
+  // ANIMASI MOTOR — 1 KLIK = 1 FULL RUN
+  // =============================
+  let running = false;
+  let speed = 1.0; // detik — bisa diubah
+  btn.style.setProperty("--giftSpeed", speed + "s");
+
+  // Biarkan user bisa ubah kecepatan dari bawah file
+  window.setGiftSpeed = sec => {
+    speed = sec;
+    btn.style.setProperty("--giftSpeed", `${speed}s`);
+  };
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleMenu();
+
+    if (running) return;          // cegah double anim
+    running = true;               // lock sementara
+
+    const startX = 0;
+    const exitX = -window.innerWidth - 120;
+    const respawnX = window.innerWidth + 120;
+
+    // Langkah 1 → pergi ke kiri sampai keluar layar
+    btn.style.transform = `translateX(${exitX}px)`;
+
+    setTimeout(() => {
+      // Langkah 2 → spawn dari kanan tanpa animasi
+      btn.style.transition = "none";
+      btn.style.transform = `translateX(${respawnX}px)`;
+
+      // force reflow
+      btn.offsetHeight;
+
+      // Langkah 3 → aktifkan animasi lagi, kembali ke posisi semula
+      btn.style.transition = `transform ${speed}s ease-in-out`;
+      btn.style.transform = `translateX(${startX}px)`;
+
+      setTimeout(() => {
+        running = false; // animasi selesai → tombol aktif lagi
+      }, speed * 1000);
+
+    }, speed * 1000);
+  });
+
+  // buka/tutup dropdown
+  function toggleMenu() {
+    menu.style.display = (menu.style.display === "block") ? "none" : "block";
+  }
+  document.addEventListener("click", () => menu.style.display = "none");
+
+  // CALLBACK MENU (future-proof)
+gm1.onclick = () => openTimer?.();
+gm2.onclick = () => openCalculator?.();
+gm3.onclick = () => openNobar?.();
+gm4.onclick = () => openMenu4?.();
+gm5.onclick = () => openMenu5?.();
+gm6.onclick = () => openMenu6?.();
+gm7.onclick = () => openMenu7?.();
+gm8.onclick = () => openMenu8?.();
+gm9.onclick = () => openMenu9?.();
+gm10.onclick = () => openMenu10?.();
+
+});
+</script>
+<!-- ====== END NAVBAR GIFT MENU SYSTEM — ONE CLICK FULL ANIMATION ====== -->
+
+<!-- ====== MOTOR SOUND SYSTEM ====== -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("navGiftBtn");
+  if (!btn) return;
+
+  /* contoh link suara "ngeng" — nanti tinggal lu ganti */
+  const motorSound = new Audio("https://files.catbox.moe/fid0tz.mp3");
+
+  /* biar suaranya boleh dipencet berkali-kali tanpa delay */
+  motorSound.preload = "auto";
+
+  btn.addEventListener("click", () => {
+    try {
+      motorSound.currentTime = 0;   // mulai ulang dari awal setiap klik
+      motorSound.play();
+    } catch(e) {
+      console.warn("Sound auto-play blocked oleh browser ", e);
+    }
+  });
+});
+</script>
+<!-- ====== END MOTOR SOUND SYSTEM ====== -->
+
+
+
+
+
+
+
+<!-- ====== REALTIME CHAT TIMER SYSTEM — VIA MENU 1 ====== -->
+<style>
+#chatTimerBox {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,0.09);
+  backdrop-filter: blur(14px);
+  padding: 12px 22px;
+  border-radius: 16px;
+  display: none;
+  align-items: center;
+  gap: 18px;
+  z-index: 99999;
+  box-shadow: 0 12px 38px rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+#chatTimerDisplay {
+  font-size: 28px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255,255,255,0.95), 0 0 12px rgba(255,255,255,0.7);
+  min-width: 88px;
+  text-align: center;
+  letter-spacing: 1.5px;
+}
+
+#timerStopBtn {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ff5e5e;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.14);
+  cursor: pointer;
+  transition: 0.15s;
+}
+#timerStopBtn:hover { background: rgba(255,255,255,0.18); }
+</style>
+
+<div id="chatTimerBox">
+  <div id="chatTimerDisplay">00:00</div>
+  <button id="timerStopBtn">STOP</button>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // FIREBASE lokasi state timer
+  const timerRef = firebase.database().ref("private_timer_state");
+
+  let timerRunning = false;
+  let startTime = 0;
+  let timerInterval = null;
+
+  const box = document.getElementById("chatTimerBox");
+  const display = document.getElementById("chatTimerDisplay");
+  const stopBtn = document.getElementById("timerStopBtn");
+
+  // Format waktu MM:SS
+  function renderTime(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    const m = Math.floor(totalSec / 60).toString().padStart(2, "0");
+    const s = (totalSec % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  }
+
+  function startLocalTimer() {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      const now = Date.now();
+      const elapsed = now - startTime;
+      display.textContent = renderTime(elapsed);
+    }, 500);
+  }
+
+  function stopLocalTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    display.textContent = "00:00";
+    box.style.display = "none";
+  }
+
+  // Klik STOP oleh salah satu user
+  stopBtn.addEventListener("click", () => {
+    timerRef.set({ running: false, startTime: null });
+  });
+
+  // =============== LISTENER FIREBASE — real-time sinkron ===============
+  timerRef.on("value", snap => {
+    const state = snap.val();
+    if (!state) return;
+
+    // START
+    if (state.running) {
+      timerRunning = true;
+      startTime = state.startTime;
+      box.style.display = "flex";
+      startLocalTimer();
+    }
+    // STOP
+    else {
+      timerRunning = false;
+      stopLocalTimer();
+    }
+  });
+
+  // =============== AKTIVASI dari NAVBAR MENU 1 ===============
+  // (Menu 1 di gift menu akan trigger timer start)
+  const trigger = document.getElementById("gm1");
+  if (trigger) {
+    trigger.addEventListener("click", () => {
+      // jika timer belum berjalan → mulai
+      if (!timerRunning) {
+        timerRef.set({
+          running: true,
+          startTime: Date.now()
+        });
+      }
+    });
+  }
+});
+</script>
+<!-- ====== END REALTIME CHAT TIMER SYSTEM ====== -->
+
+
+<!-- ====== POPUP 3D CALCULATOR — TRIGGER MENU 2 ====== -->
+<style>
+#calcPopup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.7);
+  width: 290px;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(18px);
+  padding: 20px;
+  border-radius: 18px;
+  box-shadow: 0 20px 45px rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.12);
+  display: none;
+  z-index: 999999;
+  transition: 0.25s ease;
+}
+
+#calcDisplay {
+  width: 100%;
+  background: rgba(0,0,0,0.25);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 28px;
+  font-weight: 900;
+  text-align: right;
+  margin-bottom: 16px;
+  color: #fff;
+  letter-spacing: 2px;
+  text-shadow: 0 0 7px rgba(255,255,255,0.8);
+}
+
+.calc-btn-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.calc-btn {
+  padding: 14px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.12);
+  text-align: center;
+  user-select: none;
+  cursor: pointer;
+  transition: 0.14s;
+}
+.calc-btn:hover { background: rgba(255,255,255,0.17); }
+.calc-btn:active { transform: scale(0.93); }
+
+#calcClose {
+  margin-top: 14px;
+  width: 100%;
+  padding: 10px;
+  font-weight: 900;
+  text-align: center;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.14);
+  color: #ff6b6b;
+  cursor: pointer;
+  transition: .15s;
+}
+#calcClose:hover { background: rgba(255,255,255,0.20); }
+</style>
+
+<div id="calcPopup">
+  <div id="calcDisplay">0</div>
+  <div class="calc-btn-grid">
+    <div class="calc-btn">7</div><div class="calc-btn">8</div><div class="calc-btn">9</div><div class="calc-btn">÷</div>
+    <div class="calc-btn">4</div><div class="calc-btn">5</div><div class="calc-btn">6</div><div class="calc-btn">×</div>
+    <div class="calc-btn">1</div><div class="calc-btn">2</div><div class="calc-btn">3</div><div class="calc-btn">−</div>
+    <div class="calc-btn">0</div><div class="calc-btn">.</div><div class="calc-btn">=</div><div class="calc-btn">+</div>
+    <div class="calc-btn" style="grid-column: span 4;background:#ff52525c;font-weight:900">C</div>
+  </div>
+  <div id="calcClose">Tutup</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.6.4/math.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const popup = document.getElementById("calcPopup");
+  const display = document.getElementById("calcDisplay");
+  const closeBtn = document.getElementById("calcClose");
+
+  let expression = "";
+
+  function update() {
+    display.textContent = expression || "0";
+  }
+
+  // Convert simbol UI ke operator JS
+  function convertSymbols(str) {
+    return str
+      .replace(/×/g, "*")
+      .replace(/÷/g, "/")
+      .replace(/−/g, "-");
+  }
+
+  // buka popup lewat Menu 2
+  const menu2 = document.getElementById("gm2");
+  if (menu2) {
+    menu2.addEventListener("click", () => {
+      popup.style.display = "block";
+      setTimeout(() => popup.style.transform = "translate(-50%, -50%) scale(1)", 10);
+      update();
+    });
+  }
+
+  // tutup popup
+  closeBtn.addEventListener("click", () => {
+    popup.style.transform = "translate(-50%, -50%) scale(0.7)";
+    setTimeout(() => popup.style.display = "none", 200);
+  });
+
+  popup.querySelectorAll(".calc-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      let val = btn.textContent;
+
+      // CLEAR
+      if (val === "C") {
+        expression = "";
+        update();
+        return;
+      }
+
+      // SAMA DENGAN
+      if (val === "=") {
+        try {
+          const result = math.evaluate(convertSymbols(expression));
+          expression = result.toString();
+        } catch {
+          expression = "Error";
+          update();
+          setTimeout(() => {
+            expression = "";
+            update();
+          }, 900);
+        }
+        update();
+        return;
+      }
+
+      // Cegah input dobel operator
+      const ops = ["+", "−", "×", "÷"];
+      const last = expression.slice(-1);
+
+      if (ops.includes(val)) {
+        // kalo sebelumnya operator --> ganti operator
+        if (ops.includes(last)) {
+          expression = expression.slice(0, -1) + val;
+          update();
+          return;
+        }
+      }
+
+      // Cegah double dot (misal 7..2)
+      if (val === ".") {
+        const parts = expression.split(/[\+\−\×\÷]/);
+        if (parts[parts.length - 1].includes(".")) return;
+      }
+
+      // Tambahin karakter normal
+      expression += val;
+      update();
+    });
+  });
+
+  update();
+});
+</script>
+<!-- ====== END POPUP 3D CALCULATOR ====== -->
 
